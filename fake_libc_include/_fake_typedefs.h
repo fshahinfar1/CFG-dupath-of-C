@@ -169,4 +169,6 @@ typedef struct xcb_connection_t xcb_connection_t;
 typedef uint32_t xcb_window_t;
 typedef uint32_t xcb_visualid_t;
 
+/* socket.h */
+typedef unsigned short __kernel_sa_family_t;
 #endif

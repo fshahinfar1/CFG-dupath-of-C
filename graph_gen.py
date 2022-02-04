@@ -33,6 +33,7 @@ class AstNode:
         d = list(set(self.d))
         u = list(set(self.u))
         string = "\n".join(self.code)
+        return string
         string += "\n##############"
         string += "\nid: " + str(self.id)
         string += "\nd: "
@@ -80,9 +81,11 @@ class Graph:
         if self.g is not None:
             self.travel_dupath()
             for graph in self.g:
+                name = self.name + '_' + str(graph.id)
+                self.dot = Digraph(name=name)
                 self.travel_graph(graph)
-            self.dot.format = 'svg'
-            s = self.dot.render(os.path.join('tmp', self.name), view=True)
+                self.dot.format = 'svg'
+                self.dot.render(os.path.join('tmp', name), view=False)
 
     def travel_path(self, path):
         tmp = []
@@ -155,7 +158,13 @@ class Graph:
             if typeNode.dim is None:
                 string += '[]'
             else:
-                string += '[%s]' % typeNode.dim.value
+                tmp = dir(typeNode.dim)
+                if 'right' in tmp:
+                    string += '[%s]' % typeNode.dim.right
+                elif 'value' in tmp:
+                    string += '[%s]' % typeNode.dim.value
+                else:
+                    string += '[%s]' % '<unknown>'
             return string
         elif node_name == 'IdentifierType':
             return ' '.join(typeNode.names)
@@ -173,7 +182,7 @@ class Graph:
             return string
         else:
             print('未处理的Decl的type属性')
-            print(typeNode)
+            print(type(typeNode))
             return ''
 
     def getComputeStatement_U(self, node):
@@ -826,10 +835,10 @@ def linefilter(l):
     """
     if 'SEC(' in l:
         return False
-    if (l.strip().startswith('#include') and 'linux/' in l):
-        return False
-    if (l.strip().startswith('#include "')):
-        return False
+    # if (l.strip().startswith('#include') and 'linux/' in l):
+    #     return False
+    # if (l.strip().startswith('#include "')):
+    #     return False
     return True
 
 
@@ -850,11 +859,20 @@ def build_graph(path, name):
     with open(tmpfile1, 'w') as f:
         f.writelines(txt)
     include_paths = [
-                '-I ./fake_libc_include/',
-                f'-I {cfile_dir}',
-            ]
+            '-I ./fake_libc_include/',
+            f'-I {cfile_dir}',
+    ]
     inc = ' '.join(include_paths)
-    cmd = f"gcc -nostdinc -E -D'__attribute__(x)=' {inc} {tmpfile1} > {tmpfile2}"
+    defs = [
+            "-D'__attribute__(x)='",
+            "-D'__asm__(x)='",
+            "-D'typeof(x)=int'",
+            "-D'SEC(x)='",
+            "-D'__inline__='",
+            "-D'pragma='",
+    ]
+    defines = ' '.join(defs)
+    cmd = f"gcc -nostdinc -E {defines} {inc} {tmpfile1} > {tmpfile2}"
     print(cmd)
     subprocess.run(cmd, shell=True)
     ast = parse_file(tmpfile2)
