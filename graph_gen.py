@@ -79,7 +79,7 @@ class Graph:
         self.name = name
         self.build(ast)
         if self.g is not None:
-            self.travel_dupath()
+            # self.travel_dupath()
             for graph in self.g:
                 name = self.name + '_' + str(graph.id)
                 self.dot = Digraph(name=name)
@@ -235,9 +235,23 @@ class Graph:
             u = [node.name]
         elif node_name == 'NoneType':
             pass
+        elif node_name == 'FuncCall':
+            # TODO: it is duplicate maybe use functions
+            string, _ = self.getComputeStatement_U(node.name)
+            if node.args:
+                exprlist = node.args.exprs
+            else:
+                exprlist = []
+            strings = []
+            if exprlist:
+                for expr in exprlist:
+                    expr_str, expr_u = self.getComputeStatement_U(expr)
+                    u += expr_u
+                    strings.append(expr_str)
+            string += '(' + ', '.join(strings) + ')'
         else:
             print("未处理的表达式类型")
-            print(node)
+            print(type(node))
         return string, u
 
     def getDecl_DU(self, declNode):
@@ -362,7 +376,7 @@ class Graph:
                 string, u = self.getComputeStatement_U(pycNode)
             else:
                 print('未处理的statement')
-                print(pycNode)
+                print(type(pycNode))
             # 保存数据，还原dupath
             astn.code.append(string)
             astn.d += d
