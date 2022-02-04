@@ -81,7 +81,8 @@ class Graph:
             self.travel_dupath()
             for graph in self.g:
                 self.travel_graph(graph)
-            self.dot.render(os.path.join('tmp', self.name), view=True)
+            self.dot.format = 'svg'
+            s = self.dot.render(os.path.join('tmp', self.name), view=True)
 
     def travel_path(self, path):
         tmp = []
@@ -335,12 +336,16 @@ class Graph:
                 string = l_str + ' ' + pycNode.op + ' ' + r_str
             elif node_name == "FuncCall":
                 string, _ = self.getComputeStatement_U(pycNode.name)
-                exprlist = pycNode.args.exprs
+                if pycNode.args:
+                    exprlist = pycNode.args.exprs
+                else:
+                    exprlist = []
                 strings = []
-                for expr in exprlist:
-                    expr_str, expr_u = self.getComputeStatement_U(expr)
-                    u += expr_u
-                    strings.append(expr_str)
+                if exprlist:
+                    for expr in exprlist:
+                        expr_str, expr_u = self.getComputeStatement_U(expr)
+                        u += expr_u
+                        strings.append(expr_str)
                 string += '(' + ', '.join(strings) + ')'
             elif node_name == "EmptyStatement":
                 pass
@@ -759,6 +764,8 @@ class Graph:
                     flag = 1
                     decl.append(eachNode)
                 elif eachNode.__class__.__name__ == "Typedef":
+                    # TODO: I am not intrested to typedef yet!
+                    continue
                     # 如果存在连续的decl声明，优先处理
                     if flag == 1:
                         self.build_decl(decl)
@@ -821,6 +828,8 @@ def linefilter(l):
         return False
     if (l.strip().startswith('#include') and 'linux/' in l):
         return False
+    if (l.strip().startswith('#include "')):
+        return False
     return True
 
 
@@ -849,16 +858,7 @@ def build_graph(path, name):
     print(cmd)
     subprocess.run(cmd, shell=True)
     ast = parse_file(tmpfile2)
-    # ast.show()
-    # print(ast)
     graph = Graph(ast, name)
-
-    # dot = Digraph(name='test1', comment='t1')
-    # dot.node('a','a1')
-    # dot.edge('a','b','a1->b1')
-    # dot.node('b','b1')
-    # # dot.view()
-    # dot.render('c_file.gv', view=True)
 
 if __name__ == '__main__':
     build_graph(r'tmp/c_processfile.c')
