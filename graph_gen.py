@@ -63,7 +63,7 @@ class ConditionNode(AstNode):
 
 
 class Graph:
-    def __init__(self, ast, name="c"):
+    def __init__(self, ast, name="c", export_type='pdf'):
         """
         通过ast建立图，列表存储，并记录变量的du情况
         g: [AstNode] 全局变量、方法或typedef
@@ -84,7 +84,7 @@ class Graph:
                 name = self.name + '_' + str(graph.id)
                 self.dot = Digraph(name=name)
                 self.travel_graph(graph)
-                self.dot.format = 'svg'
+                self.dot.format = export_type
                 self.dot.render(os.path.join('tmp', name), view=False)
 
     def travel_path(self, path):
@@ -249,6 +249,23 @@ class Graph:
                     u += expr_u
                     strings.append(expr_str)
             string += '(' + ', '.join(strings) + ')'
+        elif node_name == 'StructRef':
+            strings = []
+            children = node.children()
+            u = [node.name]
+            for c in children:
+                cname = c[1].__class__.__name__
+                if cname == 'Cast':
+                    # TODO: not impl
+                    continue
+                elif cname == 'ID':
+                    # _s , _u = self.getComputeStatement_U(c[1].name)
+                    strings.append(c[1].name)
+                    # u += _u
+                elif cname == 'StructRef':
+                    # TODO: make this snipt a function and call again
+                    continue
+            string = '.'.join(strings)
         else:
             print("未处理的表达式类型")
             print(type(node))
@@ -856,7 +873,7 @@ def linefilter(l):
     return True
 
 
-def build_graph(path, name):
+def build_graph(path, name, export_type):
     # 处理‘#include’标签
     cfile_dir = os.path.dirname(path)
     if not cfile_dir:
@@ -886,11 +903,11 @@ def build_graph(path, name):
             "-D'pragma='",
     ]
     defines = ' '.join(defs)
-    cmd = f"gcc -nostdinc -E {defines} {inc} {tmpfile1} > {tmpfile2}"
+    cmd = f"gcc -O2 -nostdinc -E {defines} {inc} {tmpfile1} > {tmpfile2}"
     print(cmd)
     subprocess.run(cmd, shell=True)
     ast = parse_file(tmpfile2)
-    graph = Graph(ast, name)
+    graph = Graph(ast, name, export_type)
 
 if __name__ == '__main__':
     build_graph(r'tmp/c_processfile.c')
