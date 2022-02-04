@@ -109,6 +109,18 @@ typedef int sigjmp_buf;
 typedef int stack_t;
 typedef int siginfo_t;
 typedef int z_stream;
+typedef int __le8;
+typedef int __le16;
+typedef int __le32;
+typedef int __le64;
+typedef int __be8;
+typedef int __be16;
+typedef int __be32;
+typedef int __be64;
+typedef int u8;
+typedef int u16;
+typedef int u32;
+typedef int u64;
 
 /* C99 exact-width integer types */
 typedef int int8_t;

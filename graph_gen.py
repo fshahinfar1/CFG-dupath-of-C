@@ -63,7 +63,7 @@ class ConditionNode(AstNode):
 
 
 class Graph:
-    def __init__(self, ast, name="c", export_type='pdf'):
+    def __init__(self, ast):
         """
         通过ast建立图，列表存储，并记录变量的du情况
         g: [AstNode] 全局变量、方法或typedef
@@ -76,16 +76,17 @@ class Graph:
         self.g = None
         self.du_path = None
         self.dot = None
-        self.name = name
         self.build(ast)
+
+    def export(self, name, output_dir, export_type='pdf'):
         if self.g is not None:
             # self.travel_dupath()
             for graph in self.g:
-                name = self.name + '_' + str(graph.id)
-                self.dot = Digraph(name=name)
+                _name = name + '_' + str(graph.id)
+                self.dot = Digraph(name=_name)
                 self.travel_graph(graph)
                 self.dot.format = export_type
-                self.dot.render(os.path.join('tmp', name), view=False)
+                self.dot.render(os.path.join(output_dir, _name), view=False)
 
     def travel_path(self, path):
         tmp = []
@@ -789,7 +790,6 @@ class Graph:
         if nodeName == 'FileAST':
             self.g = []
             self.du_path = []
-            self.dot = Digraph(name=self.name)
             flag = 0
             decl = []
             typedef = []
@@ -864,8 +864,8 @@ def linefilter(l):
     This function removes some lines from the C file
     before passing to GCC/Clang for preprocessing
     """
-    if 'SEC(' in l:
-        return False
+    # if 'SEC(' in l:
+    #     return False
     # if (l.strip().startswith('#include') and 'linux/' in l):
     #     return False
     # if (l.strip().startswith('#include "')):
@@ -878,11 +878,14 @@ def build_graph(path, name, export_type):
     cfile_dir = os.path.dirname(path)
     if not cfile_dir:
         cfile_dir = '.'
-    tmpdir = './tmp'
+    top_tmpdir = './tmp'
+    tmpdir = os.path.join(top_tmpdir, name)
     tmpfile1 = os.path.join(tmpdir, 'c_tmp1.c')
     tmpfile2 = os.path.join(tmpdir, 'c_processfile.c')
+    if not os.path.isdir(top_tmpdir):
+        os.mkdir(tmpdir)
     if not os.path.isdir(tmpdir):
-        os.path.mkdir(tmpdir)
+        os.mkdir(tmpdir)
     # Try to pre-process the c file
     with open(path) as f:
         txt = f.readlines()
@@ -891,6 +894,7 @@ def build_graph(path, name, export_type):
         f.writelines(txt)
     include_paths = [
             '-I ./fake_libc_include/',
+            '-I ./headers/',
             f'-I {cfile_dir}',
     ]
     inc = ' '.join(include_paths)
@@ -900,14 +904,15 @@ def build_graph(path, name, export_type):
             "-D'typeof(x)=int'",
             "-D'SEC(x)='",
             "-D'__inline__='",
-            "-D'pragma='",
+            "-D'__bitwise__='",
     ]
     defines = ' '.join(defs)
     cmd = f"gcc -O2 -nostdinc -E {defines} {inc} {tmpfile1} > {tmpfile2}"
     print(cmd)
     subprocess.run(cmd, shell=True)
     ast = parse_file(tmpfile2)
-    graph = Graph(ast, name, export_type)
+    graph = Graph(ast)
+    graph.export(name, tmpdir, export_type)
 
 if __name__ == '__main__':
     build_graph(r'tmp/c_processfile.c')
