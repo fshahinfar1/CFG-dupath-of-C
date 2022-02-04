@@ -1,3 +1,4 @@
+import subprocess
 from pycparser import parse_file
 from graphviz import Digraph
 from graphviz import escape
@@ -163,9 +164,10 @@ class Graph:
             string = "struct %s{" % typeNode.name
             strings = []
             # 结构体中的d和u暂不考虑
-            for each_decl in typeNode.decls:
-                inner_str, _, _ = self.getDecl_DU(each_decl)
-                strings.append(inner_str)
+            if typeNode.decls:
+                for each_decl in typeNode.decls:
+                    inner_str, _, _ = self.getDecl_DU(each_decl)
+                    strings.append(inner_str)
             string += '; '.join(strings) + '}'
             return string
         else:
@@ -810,21 +812,43 @@ class Graph:
             self.du_path.append(dupath)
 
 
-def build_graph(path, name="test"):
+def linefilter(l):
+    """
+    This function removes some lines from the C file
+    before passing to GCC/Clang for preprocessing
+    """
+    if 'SEC(' in l:
+        return False
+    if (l.strip().startswith('#include') and 'linux/' in l):
+        return False
+    return True
+
+
+def build_graph(path, name):
     # 处理‘#include’标签
-    with open(path, encoding='utf-8') as f:
-        txt_list = f.readlines()
-        txt = ''
-        for each in txt_list:
-            if each.find('#include') != -1 or each.find('using') == 0:
-                continue
-            elif each.find('//') != -1:
-                txt += each[:each.find('//')] + '\n'
-            else:
-                txt += each
-    with open('tmp/c_processfile.c', 'w', encoding='utf-8') as f:
-        f.write(txt)
-    ast = parse_file('tmp/c_processfile.c', use_cpp=True, cpp_path=r'C:\MinGW\bin\gcc.exe', cpp_args=['-E', r'-Iutils/fake_libc_include'])
+    cfile_dir = os.path.dirname(path)
+    if not cfile_dir:
+        cfile_dir = '.'
+    tmpdir = './tmp'
+    tmpfile1 = os.path.join(tmpdir, 'c_tmp1.c')
+    tmpfile2 = os.path.join(tmpdir, 'c_processfile.c')
+    if not os.path.isdir(tmpdir):
+        os.path.mkdir(tmpdir)
+    # Try to pre-process the c file
+    with open(path) as f:
+        txt = f.readlines()
+    txt = filter(linefilter , txt)
+    with open(tmpfile1, 'w') as f:
+        f.writelines(txt)
+    include_paths = [
+                '-I ./fake_libc_include/',
+                f'-I {cfile_dir}',
+            ]
+    inc = ' '.join(include_paths)
+    cmd = f"gcc -nostdinc -E -D'__attribute__(x)=' {inc} {tmpfile1} > {tmpfile2}"
+    print(cmd)
+    subprocess.run(cmd, shell=True)
+    ast = parse_file(tmpfile2)
     # ast.show()
     # print(ast)
     graph = Graph(ast, name)
