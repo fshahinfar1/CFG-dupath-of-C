@@ -45,54 +45,10 @@
  * ___swab16, ___swab32, ___swab64, ___swahw32, ___swahb32
  */
 
-static __inline__  __u16 __fswab16(__u16 val)
-{
-#if defined (__arch_swab16)
-	return __arch_swab16(val);
-#else
-	return ___constant_swab16(val);
-#endif
-}
 
-static __inline__  __u32 __fswab32(__u32 val)
-{
-#if defined(__arch_swab32)
-	return __arch_swab32(val);
-#else
-	return ___constant_swab32(val);
-#endif
-}
 
-static __inline__  __u64 __fswab64(__u64 val)
-{
-#if defined (__arch_swab64)
-	return __arch_swab64(val);
-#elif defined(__SWAB_64_THRU_32__)
-	__u32 h = val >> 32;
-	__u32 l = val & ((1ULL << 32) - 1);
-	return (((__u64)__fswab32(l)) << 32) | ((__u64)(__fswab32(h)));
-#else
-	return ___constant_swab64(val);
-#endif
-}
 
-static __inline__  __u32 __fswahw32(__u32 val)
-{
-#ifdef __arch_swahw32
-	return __arch_swahw32(val);
-#else
-	return ___constant_swahw32(val);
-#endif
-}
 
-static __inline__  __u32 __fswahb32(__u32 val)
-{
-#ifdef __arch_swahb32
-	return __arch_swahb32(val);
-#else
-	return ___constant_swahb32(val);
-#endif
-}
 
 /**
  * __swab16 - return a byteswapped 16-bit value
@@ -133,14 +89,6 @@ static __inline__  __u32 __fswahb32(__u32 val)
 	__fswab64(x))
 #endif
 
-static __always_inline unsigned long __swab(const unsigned long y)
-{
-#if __BITS_PER_LONG == 64
-	return __swab64(y);
-#else /* __BITS_PER_LONG == 32 */
-	return __swab32(y);
-#endif
-}
 
 /**
  * __swahw32 - return a word-swapped 32-bit value
@@ -168,40 +116,16 @@ static __always_inline unsigned long __swab(const unsigned long y)
  * __swab16p - return a byteswapped 16-bit value from a pointer
  * @p: pointer to a naturally-aligned 16-bit value
  */
-static __always_inline __u16 __swab16p(const __u16 *p)
-{
-#ifdef __arch_swab16p
-	return __arch_swab16p(p);
-#else
-	return __swab16(*p);
-#endif
-}
 
 /**
  * __swab32p - return a byteswapped 32-bit value from a pointer
  * @p: pointer to a naturally-aligned 32-bit value
  */
-static __always_inline __u32 __swab32p(const __u32 *p)
-{
-#ifdef __arch_swab32p
-	return __arch_swab32p(p);
-#else
-	return __swab32(*p);
-#endif
-}
 
 /**
  * __swab64p - return a byteswapped 64-bit value from a pointer
  * @p: pointer to a naturally-aligned 64-bit value
  */
-static __always_inline __u64 __swab64p(const __u64 *p)
-{
-#ifdef __arch_swab64p
-	return __arch_swab64p(p);
-#else
-	return __swab64(*p);
-#endif
-}
 
 /**
  * __swahw32p - return a wordswapped 32-bit value from a pointer
@@ -209,14 +133,6 @@ static __always_inline __u64 __swab64p(const __u64 *p)
  *
  * See __swahw32() for details of wordswapping.
  */
-static __inline__ __u32 __swahw32p(const __u32 *p)
-{
-#ifdef __arch_swahw32p
-	return __arch_swahw32p(p);
-#else
-	return __swahw32(*p);
-#endif
-}
 
 /**
  * __swahb32p - return a high and low byteswapped 32-bit value from a pointer
@@ -224,52 +140,20 @@ static __inline__ __u32 __swahw32p(const __u32 *p)
  *
  * See __swahb32() for details of high/low byteswapping.
  */
-static __inline__ __u32 __swahb32p(const __u32 *p)
-{
-#ifdef __arch_swahb32p
-	return __arch_swahb32p(p);
-#else
-	return __swahb32(*p);
-#endif
-}
 
 /**
  * __swab16s - byteswap a 16-bit value in-place
  * @p: pointer to a naturally-aligned 16-bit value
  */
-static __inline__ void __swab16s(__u16 *p)
-{
-#ifdef __arch_swab16s
-	__arch_swab16s(p);
-#else
-	*p = __swab16p(p);
-#endif
-}
 /**
  * __swab32s - byteswap a 32-bit value in-place
  * @p: pointer to a naturally-aligned 32-bit value
  */
-static __always_inline void __swab32s(__u32 *p)
-{
-#ifdef __arch_swab32s
-	__arch_swab32s(p);
-#else
-	*p = __swab32p(p);
-#endif
-}
 
 /**
  * __swab64s - byteswap a 64-bit value in-place
  * @p: pointer to a naturally-aligned 64-bit value
  */
-static __always_inline void __swab64s(__u64 *p)
-{
-#ifdef __arch_swab64s
-	__arch_swab64s(p);
-#else
-	*p = __swab64p(p);
-#endif
-}
 
 /**
  * __swahw32s - wordswap a 32-bit value in-place
@@ -277,14 +161,6 @@ static __always_inline void __swab64s(__u64 *p)
  *
  * See __swahw32() for details of wordswapping
  */
-static __inline__ void __swahw32s(__u32 *p)
-{
-#ifdef __arch_swahw32s
-	__arch_swahw32s(p);
-#else
-	*p = __swahw32p(p);
-#endif
-}
 
 /**
  * __swahb32s - high and low byteswap a 32-bit value in-place
@@ -292,14 +168,6 @@ static __inline__ void __swahw32s(__u32 *p)
  *
  * See __swahb32() for details of high and low byte swapping
  */
-static __inline__ void __swahb32s(__u32 *p)
-{
-#ifdef __arch_swahb32s
-	__arch_swahb32s(p);
-#else
-	*p = __swahb32p(p);
-#endif
-}
 
 
 #endif /* _LINUX_SWAB_H */
