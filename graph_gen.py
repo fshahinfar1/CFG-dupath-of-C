@@ -122,16 +122,18 @@ class Graph:
             print()
 
     def travel_graph(self, node):
+        self.dot.attr('node', shape="ellipse", peripheries='1')
         if node.isStart is True:
-            self.dot.attr('node', shape="doublecircle")
+            self.dot.attr('node', peripheries='2')
         if node.isEnd is True:
+            # FIXME: box end node is not a box in the output file!
             self.dot.attr('node', shape="box")
         if node.id != -1:
             self.dot.node(str(node.id), escape(node.show()))
-        self.dot.attr('node', shape="ellipse")
 
+        count_child = len(node.child)
         # if节点画true false
-        if len(node.child) == 2 and node.child[0].id == -1:
+        if count_child == 2 and node.child[0].id == -1:
             for c in node.child:
                 for c_stmt in c.child:
                     if len(c_stmt.code) == 0:
@@ -495,6 +497,7 @@ class Graph:
                 # 添加多孩子节点
                 dupath = self.combine_multiple_dupath(dupath, stmt_path)
                 node.child.insert(0, n)
+                end = n
                 # print(n.code, n.id, n.connectTo)
                 # for each in n.child:
                 #     print(each.code, each.id, each.connectTo)
@@ -560,7 +563,6 @@ class Graph:
                 child_list = [children[i].iftrue, children[i].iffalse]
                 for each_child in child_list:
                     child_name = each_child.__class__.__name__
-                    # print(child_name)
                     tmp = None
                     child_n = AstNode(-1)
                     if child_name == "Compound":
