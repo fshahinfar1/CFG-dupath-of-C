@@ -33,3 +33,10 @@ optional arguments:
 There are some problem in detecting statesment having struct refrences.
 There might be other issues too.
 
+
+## Example output
+
+The result would probably look something like this.
+
+![Example CFG result](./examples/bmc_rx_main.png "bmc_rx_filter_main")
+
