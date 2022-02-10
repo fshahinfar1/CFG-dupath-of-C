@@ -76,6 +76,8 @@ class Graph:
         self.g = None
         self.du_path = None
         self.dot = None
+        self._error_book = dict()
+        # build the tree
         self.build(ast)
 
     def export(self, name, output_dir, export_type='pdf'):
@@ -87,6 +89,14 @@ class Graph:
                 self.travel_graph(graph)
                 self.dot.format = export_type
                 self.dot.render(os.path.join(output_dir, _name), view=False)
+
+    def error_report(self):
+        print('-' * 40)
+        print('Reporting errors:')
+        for key in self._error_book:
+            print(key, ':')
+            for err, cnt in self._error_book[key].items():
+                print('\t', err, ':',  cnt)
 
     def travel_path(self, path):
         tmp = []
@@ -182,13 +192,18 @@ class Graph:
             string += '; '.join(strings) + '}'
             return string
         else:
-            print('未处理的Decl的type属性')
-            print(type(typeNode))
+            key = 'Declaration'
+            msg = f'Failed for type: {type(typeNode)}'
+            if key not in self._error_book:
+                self._error_book[key] = dict()
+            count = self._error_book[key].get(msg, 0)
+            self._error_book[key][msg] = count + 1
             return ''
 
     def getComputeStatement_U(self, node):
         """
-        UnaryOp(* &也算), BinaryOp, TernaryOp, ArrayRef, Constant, Cast, InitList, ID, None
+        UnaryOp(* &也算), BinaryOp, TernaryOp, ArrayRef, Constant, Cast,
+        InitList, ID, None, FuncCall, StructRef
 
         :param node: 节点或空节点
         :return: codeStr 和数组 u
@@ -268,8 +283,14 @@ class Graph:
                     continue
             string = '.'.join(strings)
         else:
-            print("未处理的表达式类型")
-            print(type(node))
+            # print("未处理的表达式类型")
+            # print(type(node))
+            key = 'Compound Statement'
+            msg = f'Failed for type: {type(node)}'
+            if key not in self._error_book:
+                self._error_book[key] = dict()
+            count = self._error_book[key].get(msg, 0)
+            self._error_book[key][msg] = count + 1
         return string, u
 
     def getDecl_DU(self, declNode):
@@ -393,8 +414,16 @@ class Graph:
             elif node_name in ('UnaryOp', 'BinaryOp', 'TernaryOp'):
                 string, u = self.getComputeStatement_U(pycNode)
             else:
-                print('未处理的statement')
-                print(type(pycNode))
+                # print('未处理的statement')
+                # print(type(pycNode))
+
+                key = 'Statement'
+                msg = f'Failed for type: {type(pycNode)}'
+                if key not in self._error_book:
+                    self._error_book[key] = dict()
+                count = self._error_book[key].get(msg, 0)
+                self._error_book[key][msg] = count + 1
+
             # 保存数据，还原dupath
             astn.code.append(string)
             astn.d += d
@@ -531,6 +560,7 @@ class Graph:
                 child_list = [children[i].iftrue, children[i].iffalse]
                 for each_child in child_list:
                     child_name = each_child.__class__.__name__
+                    # print(child_name)
                     tmp = None
                     child_n = AstNode(-1)
                     if child_name == "Compound":
@@ -913,6 +943,7 @@ def build_graph(path, name, export_type):
     ast = parse_file(tmpfile2)
     graph = Graph(ast)
     graph.export(name, tmpdir, export_type)
+    graph.error_report()
 
 if __name__ == '__main__':
     build_graph(r'tmp/c_processfile.c')
